@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      transition: all 300ms ease-in-out;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      background-color: #111;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      max-height: 100%;
+    }
+    body, input, button, textarea {
+      font-family: "Montserrat", sans-serif;
+    }
+    .container {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      background-color: #222;
+      padding-bottom: 5px;
+      height: 100%;
+      max-height: 100%;
+    }
+    .reload-status {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      max-width: 720px;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 5px;
+      background-color: #333;
+    }
+    .reload-status .bar {
+      background-color: #394440;
+      height: 100%;
+      width: 0%;
+      transition-duration: 15s;
+      transition-property: width;
+      transition-timing-function: linear;
+    }
+    .reload-status .bar.toggle {
+      display: none;
+    }
+    .reload-status .bar.full {
+      width: 100%;
+    }
+    .chat {
+      height: 100%;
+      display: flex;
+      justify-content: space-between;
+      flex-direction: column;
+    }
+    .msgs {
+      flex-direction: column;
+      padding: 10px;
+      display: flex;
+      align-items: flex-start;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .msgs::-webkit-scrollbar {
+      width: 12px;
+    }
+    .msgs::-webkit-scrollbar-track {
+      background: #333;
+    }
+    .msgs::-webkit-scrollbar-thumb {
+      background-color: #394440;
+      border-radius: 20px;
+      border: 3px solid #333;
+    }
+    .msgs.loading {
+      filter: blur(5px);
+    }
+    .msgs .message {
+      display: flex;
+      align-items: center;
+      max-width: 80%;
+    }
+    .msgs .avatar {
+      height: 45px;
+      width: 45px;
+      background-color: #333;
+      border-radius: 50%;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      position: relative;
+    }
+    .msgs .avatar:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: all 300ms ease-in-out;
+      background-color: rgba(0,0,0,.8);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 47.971 47.971' fill='%23fff'%3E%3Cdefs/%3E%3Cpath d='M28.228 23.986L47.092 5.122a2.998 2.998 0 000-4.242 2.998 2.998 0 00-4.242 0L23.986 19.744 5.121.88a2.998 2.998 0 00-4.242 0 2.998 2.998 0 000 4.242l18.865 18.864L.879 42.85a2.998 2.998 0 104.242 4.241l18.865-18.864L42.85 47.091c.586.586 1.354.879 2.121.879s1.535-.293 2.121-.879a2.998 2.998 0 000-4.242L28.228 23.986z'/%3E%3C/svg%3E");
+      background-size: 40%;
+      background-position: center;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+    .msgs .avatar:hover:after {
+      opacity: 1;
+      backdrop-filter: blur(2px);
+    }
+    .msgs .avatar img {
+      height: 90%;
+      width: 90%;
+    }
+    .msgs .message.same-name {
+      align-self: flex-end;
+    }
+    .msgs .msg {
+      background-color: #333;
+      padding: 10px 15px;
+      margin: 10px;
+      min-width: 200px;
+      max-width: 100%;
+      border-radius: 15px;
+      position: relative;
+      padding-bottom: 25px;
+      overflow: hidden;
+      max-width: calc(100% - 70px);
+    }
+    .msgs .msg.mine {
+      background-color: #394440;
+    }
+    .msgs .msg.not-sent:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 1084 322'%3E%3Cdefs/%3E%3Cdefs%3E%3Cpattern id='b' width='76.8' height='76.8' patternUnits='userSpaceOnUse'%3E%3Cg transform='scale(.3)'%3E%3Cdefs%3E%3Cg id='a' fill='%23fff'%3E%3Cpath d='M256-128h128l-512 512V256zM384 0v128L128 384H0z'/%3E%3C/g%3E%3C/defs%3E%3Cg%3E%3Cuse x='-256' xlink:href='%23a'/%3E%3Cuse xlink:href='%23a'/%3E%3CanimateTransform attributeName='transform' dur='0.5s' keyTimes='0;1' repeatCount='indefinite' type='translate' values='0 0; 256 0'/%3E%3C/g%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Cpath fill='url(%23b)' d='M0 0h1084v322H0z'/%3E%3C/svg%3E");
+      background-size: cover;
+      opacity: 0.1;
+    }
+    .msgs .msg .title-line {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;
+      margin-bottom: 5px;
+      color: #ccc;
+    }
+    .msgs .msg .date,
+    .msgs .msg .fingerprint
+    {
+      font-size: 0.7em;
+    }
+    .msgs .msg .date {
+      position: absolute;
+      bottom: 5px;
+      color: #aaa;
+      right: 15px;
+    }
+    .write {
+      padding: 10px;
+      display: flex;
+    }
+    input {
+      flex-grow: 1;
+      padding: 10px 15px;
+      border-radius: 15px;
+      outline: none;
+      border: 0;
+      background-color: #333;
+      margin-bottom: 5px;
+      color: #fff;
+    }
+    input:focus {
+      background-color: #394440;
+    }
+    button {
+      outline: none;
+      border: 0;
+      background-color: #333;
+      color: #fff;
+      cursor: pointer;
+      padding: 10px 15px;
+      margin-bottom: 5px;
+      border-radius: 15px;
+    }
+    button:hover, .write button:focus {
+      background-color: #394440;
+    }
+    .write button {
+      margin-left: 10px;
+      border-radius: 100%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .write button svg {
+      width: 30px;
+      height: 30px;
+    }
+    .overlay {
+      position: fixed;
+      z-index: 9999;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay:before, body:before {
+      pointer-events: none;
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: 10%;
+      /*z-index: -1;*/
+      opacity: 0.1;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cdefs/%3E%3Cfilter id='a' x='0' y='0'%3E%3CfeTurbulence baseFrequency='.8' stitchTiles='stitch' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='300' height='300' fill='%23000'/%3E%3Crect width='300' height='300' filter='url(%23a)' /%3E%3C/svg%3E");
+    }
+    .overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      z-index: -1;
+    }
+    .password {
+      display: flex;
+      flex-direction: column;
+    }
+    .password button {
+      min-width: 250px;
+      max-width: 100%;
+    }
+    .fullwidth {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay" id="overlay">
+    <form class="password" autocomplete="off" id="password-form">
+      <input type="text" required id="chat-server" placeholder="Сервер" value="lp:%servername%/x4z35solRfSNx8s/usdihNpc7z4PfXFYNHWUjZaTAW">
+      <input type="text" required id="chat-name" placeholder="Имя">
+      <input type="password" required id="chat-password" placeholder="Пароль">
+      <button type="submit" class="fullwidth">Войти</button>
+    </form>
+  </div>
+  <div class="container">
+    <div class="chat">
+      <div class="msgs" id="msgs"></div>
+      <form class="write" autocomplete="off" id="msg-form">
+        <input type="text" required id="msg-input" placeholder="Сообщение...">
+        <button type="submit">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><defs/><path fill="#ccc" d="M7.8 6.1l-2.3-.8c-.6-.1-1.3-.2-1.9.3-.5.6-.4 1.3-.3 1.9l1 2.2.6 1.6H10a.8.8 0 010 1.4H4.9l-.7 1.6-.9 2.2c-.1.6-.2 1.3.3 1.9.6.5 1.3.4 1.9.3l2.3-.8L19.2 13l.6-.2c.1-.1.5-.4.5-.9s-.4-.8-.5-.9a5 5 0 00-.6-.2L7.8 6z"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="reload-status">
+    <div class="bar full" id="loading-bar"></div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js" integrity="sha256-/H4YS+7aYb9kJ5OKhFYPUjSJdrtV6AeyJOtTkw6X72o=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.2.7/purify.min.js" integrity="sha384-cn5CQtD1KW3XEJbmZipeNG2pq0b4WI6PXFhd83xBTcOzB0HubvrHXDkfO3kmM7oV" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fast-json-patch@3.0.0-1/dist/fast-json-patch.min.js" integrity="sha384-ue3kVuwMOWiOM/5cP5HXjzCr/hzp3uXAnlpef2Uq6ffz47Q3taKNYgz9AkrbfUVa" crossorigin="anonymous"></script>
+  <script>
+    const overlayEl = document.querySelector("#overlay");
+    const chatNameEl = document.querySelector("#chat-name");
+    const chatPasswordEl = document.querySelector("#chat-password");
+    const chatServerEl = document.querySelector("#chat-server");
+    const msgsEl = document.querySelector("#msgs");
+    const msgInputEl = document.querySelector("#msg-input");
+    const passwordFormEl = document.querySelector("#password-form");
+    const msgFormEl = document.querySelector("#msg-form");
+    const loadingBarEl = document.querySelector("#loading-bar");
+
+    window.throwErrorAndReload = msg => {
+      if (!window.errorAccured) {
+        window.errorAccured = true;
+        if (!window.leaving) {
+          alert(msg);
+        }
+        location.reload();
+      }
+    }
+
+    window.onbeforeunload = () => {
+      window.leaving = true;
+    };
+
+    chatServerEl.value = chatServerEl.value.replace(
+      "%servername%",
+      location.protocol === "file:" ? "http://localhost:3000" : `${location.origin}/json`
+    );
+
+    window.browserFingerprint = CryptoJS.MD5([
+        navigator.userAgent,
+        [screen.height, screen.width, screen.colorDepth].join('x'),
+        new Date().getTimezoneOffset(),
+        !!window.sessionStorage,
+        !!window.localStorage,
+        Object.keys(navigator.plugins).map(k => {
+            return [
+                navigator.plugins[k].name,
+                navigator.plugins[k].description,
+                Object.keys(navigator.plugins[k]).map(kk => [
+                  navigator.plugins[k][kk].type,
+                  navigator.plugins[k][kk].suffixes
+                ].join('~')).join(',')
+            ].join("::");
+        }).join(';')
+      ].join('###')).toString();
+
+    const checkIfUsed = () => {
+      window.addEventListener("click", () => {
+        window.chatUsed = true;
+      });
+      window.addEventListener("keyup", () => {
+        window.chatUsed = true;
+      });
+      window.addEventListener("scroll", () => {
+        window.chatUsed = true;
+      });
+
+      setInterval(() => {
+        if (window.chatUsed) {
+          window.chatUsed = false;
+        } else if (msgInputEl.value === "") {
+          location.reload();
+        }
+      }, 60 * 1000);
+    }
+
+    const parseDate = timestamp => {
+      const date = new Date(timestamp);
+      const currentDate = new Date();
+      return currentDate.toLocaleString("ru").slice(0, 10) === date.toLocaleString("ru").slice(0, 10)
+        ? date.toLocaleTimeString("ru") : date.toLocaleString("ru");
+    }
+
+    const decryptMessage = msg =>
+      JSON.parse(CryptoJS.AES.decrypt(msg.data, window.chatPass).toString(CryptoJS.enc.Utf8));
+
+    const pushMessage = (encrypted, id) => {
+      const {name, date, msg, fingerprint} = decryptMessage(encrypted);
+      if (!name || !date || !msg || !fingerprint) {
+        throwErrorAndReload("Message parsing error");
+        return;
+      }
+
+      const message = document.createElement("div");
+      const msgInner = document.createElement("div");
+      const avatar = document.createElement("div");
+      message.classList.add("message");
+      avatar.classList.add("avatar");
+      msgInner.classList.add("msg");
+      avatar.onclick = () => {
+        delete messages[id];
+        saveMessages();
+      }
+
+      avatar.innerHTML = `<img src="https://avatars.dicebear.com/api/male/${fingerprint.slice(0, 10)}.svg">`
+      if (fingerprint === browserFingerprint) {
+        msgInner.classList.add("mine");
+      }
+      if (encrypted.notSent) {
+        msgInner.classList.add("not-sent");
+      }
+      if (name === chatName) {
+        message.classList.add("same-name");
+      }
+      msgInner.innerHTML = `
+        <div class="title-line">
+          <div class="name">${DOMPurify.sanitize(name, {USE_PROFILES: {html: false}})}</div>
+          <div class="fingerprint">[${fingerprint.slice(0, 10)}]</div>
+        </div>
+        <div class="text">${DOMPurify.sanitize(msg, {USE_PROFILES: {html: false}})}</div>
+        <div class="date">${parseDate(date)}</div>
+      `;
+      message.append(avatar);
+      message.append(msgInner);
+      msgsEl.append(message);
+    }
+
+    // const saveMessages = async () => {
+    //   try {
+    //     const encrypted = messages.filter(m => m).map(m => ({
+    //       data: CryptoJS.AES.encrypt(JSON.stringify(m), chatPass).toString()
+    //     }));
+    //     const res = await (await fetch(window.chatAddr, {
+    //       method: "PUT",
+    //       headers: {
+    //         "Content-Type": "application/json"
+    //       },
+    //       body: JSON.stringify(encrypted)
+    //     })).json();
+    //     if (res.error) {
+    //       throwErrorAndReload(res.error);
+    //     }
+    //   } catch (err) {
+    //     throwErrorAndReload(err);
+    //   }
+    //   msgsEl.scrollTop = msgsEl.scrollHeight;
+    //   loadChat(false);
+    // }
+    const sendUpdates = async data => {
+      console.log(data);
+      try {
+        const res = await (await fetch(window.chatAddr + (chatPatchSupported ? "?patch=true" : ""), {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(chatPatchSupported ? data : messages)
+        })).json();
+        if (res.error) {
+          throwErrorAndReload(res.error);
+        }
+      } catch (err) {
+        throwErrorAndReload(err);
+      }
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    window.createChat = async pass => { // Not accesible in gui
+      return await (await fetch(`${chatServerEl.value.split("/").slice(0, -1).join("/")}/${
+        CryptoJS.EvpKDF(pass || chatPasswordEl.value, chatServerEl.value.split("/").slice(-1).join("/")).toString()
+      }`, { method: "PUT", body: "[]"}));
+    }
+
+    window.onresize = () => {
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    const loadChat = async (firstTime) => {
+      if (chatLongpollSupported && !firstTime) {
+        try {
+          const res = await fetch(window.chatAddr + "?longpoll=true");
+          if (res.status === 200) {
+            window.messages = await res.json();
+          } else if (res.status !== 204) {
+            throwErrorAndReload("Error loading messages with longpoll");
+          }
+          loadChat();
+        } catch (err) {
+          throwErrorAndReload(err);
+        }
+      } else {
+        loadingBarEl.classList.toggle("toggle");
+        loadingBarEl.classList.toggle("toggle");
+        loadingBarEl.classList.toggle("full");
+        msgsEl.classList.add("loading");
+        setTimeout(async () => {
+          msgsEl.innerHTML = "";
+          try {
+            window.messages = (await (await fetch(window.chatAddr)).json());
+          } catch (err) {
+            throwErrorAndReload(err);
+          }
+          if (!messages || !(messages instanceof Array)) {
+            throwErrorAndReload("Messages not loaded");
+          }
+          messages.filter(m => m && m.data).forEach(pushMessage);
+          msgsEl.classList.remove("loading");
+          msgsEl.scrollTop = msgsEl.scrollHeight;
+          if (firstTime) {
+            window.messagesObserver = jsonpatch.observe(window.messages, async patches => {
+              await sendUpdates(patches);
+            });
+          }
+        }, 300);
+        if (!chatLongpollSupported) {
+          setTimeout(loadChat, 15000)
+        }
+      }
+      if (chatLongpollSupported && firstTime) {
+        loadingBarEl.remove();
+        loadChat();
+      }
+    };
+    
+    passwordFormEl.addEventListener("submit", e => {
+      e.preventDefault();
+      window.chatPass = chatPasswordEl.value;
+      window.chatName = chatNameEl.value;
+      window.chatLongpollSupported = !!chatServerEl.value.match(/^(p|)l(p|):/g);
+      window.chatPatchSupported = !!chatServerEl.value.match(/^(l|)p(l|):/g);
+      chatServerEl.value = chatServerEl.value.replace(/^(lp|l|p):(\s|)+/g, "");
+      window.chatAddr = `${chatServerEl.value.split("/").slice(0, -1).join("/")}/${
+        CryptoJS.EvpKDF(chatPasswordEl.value, chatServerEl.value.split("/").slice(-1).join("/")).toString()
+      }`;
+      overlayEl.classList.add("hidden");
+      chatPasswordEl.value = "";
+      chatNameEl.value = "";
+
+      loadChat(true);
+      checkIfUsed();
+    });
+
+    msgFormEl.addEventListener("submit", async e => {
+      e.preventDefault();
+      if (window.chatAddr) {
+        const encrypted = {
+          data: CryptoJS.AES.encrypt(JSON.stringify({
+            name: chatName,
+            fingerprint: browserFingerprint,
+            date: new Date().getTime(),
+            msg: msgInputEl.value
+          }), chatPass).toString()
+        }
+        messages.push(encrypted);
+        pushMessage({
+          data: encrypted.data,
+          notSent: true
+        });
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+        msgInputEl.value = "";
+      }
+    });
+  </script>
+</body>
+</html>
