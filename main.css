@@ -1,0 +1,260 @@
+* {
+  box-sizing: border-box;
+  transition: all 300ms ease-in-out;
+}
+html, body {
+  height: 100%;
+}
+body {
+  background-color: #111;
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  max-height: 100%;
+}
+body, input, button, textarea {
+  font-family: "Montserrat", sans-serif;
+}
+.container {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  background-color: #222;
+  padding-bottom: 5px;
+  height: 100%;
+  max-height: 100%;
+}
+.reload-status {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  max-width: 720px;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 5px;
+  background-color: #333;
+}
+.reload-status .bar {
+  background-color: #394440;
+  height: 100%;
+  width: 0%;
+  transition-duration: 15s;
+  transition-property: width;
+  transition-timing-function: linear;
+}
+.reload-status .bar.toggle {
+  display: none;
+}
+.reload-status .bar.full {
+  width: 100%;
+}
+.chat {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+}
+.msgs {
+  flex-direction: column;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.msgs::-webkit-scrollbar {
+  width: 12px;
+}
+.msgs::-webkit-scrollbar-track {
+  background: #333;
+}
+.msgs::-webkit-scrollbar-thumb {
+  background-color: #394440;
+  border-radius: 20px;
+  border: 3px solid #333;
+}
+.msgs.loading {
+  filter: blur(5px);
+}
+.msgs .message {
+  display: flex;
+  align-items: center;
+  max-width: 80%;
+}
+.msgs .avatar {
+  height: 45px;
+  width: 45px;
+  background-color: #333;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+.msgs .avatar:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: all 300ms ease-in-out;
+  background-color: rgba(0,0,0,.8);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 47.971 47.971' fill='%23fff'%3E%3Cdefs/%3E%3Cpath d='M28.228 23.986L47.092 5.122a2.998 2.998 0 000-4.242 2.998 2.998 0 00-4.242 0L23.986 19.744 5.121.88a2.998 2.998 0 00-4.242 0 2.998 2.998 0 000 4.242l18.865 18.864L.879 42.85a2.998 2.998 0 104.242 4.241l18.865-18.864L42.85 47.091c.586.586 1.354.879 2.121.879s1.535-.293 2.121-.879a2.998 2.998 0 000-4.242L28.228 23.986z'/%3E%3C/svg%3E");
+  background-size: 40%;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.msgs .avatar:hover:after {
+  opacity: 1;
+  backdrop-filter: blur(2px);
+}
+.msgs .avatar img {
+  height: 90%;
+  width: 90%;
+}
+.msgs .message.same-name {
+  align-self: flex-end;
+}
+.msgs .msg {
+  background-color: #333;
+  padding: 10px 15px;
+  margin: 10px;
+  min-width: 200px;
+  max-width: 100%;
+  border-radius: 15px;
+  position: relative;
+  padding-bottom: 25px;
+  overflow: hidden;
+  max-width: calc(100% - 70px);
+  position: relative;
+}
+.msgs .avatar:hover + .msg {
+  filter: blur(2px) brightness(0.5);
+}
+.msgs .msg.mine {
+  background-color: #394440;
+}
+.msgs .msg.not-sent:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 1084 322'%3E%3Cdefs/%3E%3Cdefs%3E%3Cpattern id='b' width='76.8' height='76.8' patternUnits='userSpaceOnUse'%3E%3Cg transform='scale(.3)'%3E%3Cdefs%3E%3Cg id='a' fill='%23fff'%3E%3Cpath d='M256-128h128l-512 512V256zM384 0v128L128 384H0z'/%3E%3C/g%3E%3C/defs%3E%3Cg%3E%3Cuse x='-256' xlink:href='%23a'/%3E%3Cuse xlink:href='%23a'/%3E%3CanimateTransform attributeName='transform' dur='0.5s' keyTimes='0;1' repeatCount='indefinite' type='translate' values='0 0; 256 0'/%3E%3C/g%3E%3C/g%3E%3C/pattern%3E%3C/defs%3E%3Cpath fill='url(%23b)' d='M0 0h1084v322H0z'/%3E%3C/svg%3E");
+  background-size: cover;
+  opacity: 0.1;
+}
+.msgs .msg .title-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8em;
+  margin-bottom: 5px;
+  color: #ccc;
+}
+.msgs .msg .date,
+.msgs .msg .fingerprint
+{
+  font-size: 0.7em;
+}
+.msgs .msg .date {
+  position: absolute;
+  bottom: 5px;
+  color: #aaa;
+  right: 15px;
+}
+.msg .text img {
+  max-width: 100%;
+  max-height: 300px;
+}
+.write {
+  padding: 10px;
+  display: flex;
+}
+input {
+  flex-grow: 1;
+  padding: 10px 15px;
+  border-radius: 15px;
+  outline: none;
+  border: 0;
+  background-color: #333;
+  margin-bottom: 5px;
+  color: #fff;
+}
+input:focus {
+  background-color: #394440;
+}
+button {
+  outline: none;
+  border: 0;
+  background-color: #333;
+  color: #fff;
+  cursor: pointer;
+  padding: 10px 15px;
+  margin-bottom: 5px;
+  border-radius: 15px;
+}
+button:hover, .write button:focus {
+  background-color: #394440;
+}
+.write button {
+  margin-left: 10px;
+  border-radius: 100%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.write button svg {
+  width: 30px;
+  height: 30px;
+}
+.overlay {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.overlay:before, body:before {
+  pointer-events: none;
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 10%;
+  /*z-index: -1;*/
+  opacity: 0.1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cdefs/%3E%3Cfilter id='a' x='0' y='0'%3E%3CfeTurbulence baseFrequency='.8' stitchTiles='stitch' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='300' height='300' fill='%23000'/%3E%3Crect width='300' height='300' filter='url(%23a)' /%3E%3C/svg%3E");
+}
+.overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: -1;
+}
+.password {
+  display: flex;
+  flex-direction: column;
+}
+.password button {
+  min-width: 250px;
+  max-width: 100%;
+}
+.fullwidth {
+  width: 100%;
+}
+.icon-bg{position:absolute;width:100%;height:100%;top:0;left:0;z-index:-1;overflow:hidden;display:flex;justify-content:space-around;flex-wrap:wrap;opacity:0.05}.icon-bg svg{width:100px;height:100px;transform:rotate(10deg);animation:rotation 500ms}@keyframes rotation{from{transform:rotate(0deg)}to{transform:rotate(359deg)}}
