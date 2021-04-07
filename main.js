@@ -170,6 +170,7 @@ const sendUpdates = async data => {
   }
   [...document.querySelectorAll(".not-sent")].forEach(el => el.classList.remove("not-sent"));
   msgsEl.scrollTop = msgsEl.scrollHeight;
+  scrollWhenImagesLoaded();
 }
 
 window.createChat = async pass => { // Not accesible in gui
@@ -202,7 +203,18 @@ window.setLongpollMessages = msgs => {
   messages.filter(m => m && m.data).forEach(pushMessage);
   msgsEl.classList.remove("loading");
   msgsEl.scrollTop = msgsEl.scrollHeight;
+  scrollWhenImagesLoaded();
   observeMessages();
+}
+
+const scrollWhenImagesLoaded = () => {  
+  Promise.all(
+    Array.from(document.images)
+      .filter(img => !img.complete)
+      .map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))
+  ).then(() => {
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  });
 }
 
 const loadChat = async (firstTime) => {
@@ -235,6 +247,7 @@ const loadChat = async (firstTime) => {
       }
       messages.filter(m => m && m.data).forEach(pushMessage);
       msgsEl.classList.remove("loading");
+      scrollWhenImagesLoaded()
       msgsEl.scrollTop = msgsEl.scrollHeight;
       if (firstTime) {
         observeMessages();
@@ -285,6 +298,7 @@ msgFormEl.addEventListener("submit", async e => {
       notSent: true
     });
     msgsEl.scrollTop = msgsEl.scrollHeight;
+    scrollWhenImagesLoaded();
     msgInputEl.value = "";
   }
 });
