@@ -83,25 +83,25 @@ const tinymark = str => {
 
 window.navestiSuetu=()=>setInterval(()=>{document.querySelector(".icon-bg").innerHTML=Array.from({length:(window.innerHeight+window.innerWidth)/10}).map(()=>identicon(Math.random().toString())).join("\n")},500);
 
-const checkIfUsed = () => {
-  window.addEventListener("click", () => {
-    window.chatUsed = true;
-  });
-  window.addEventListener("keyup", () => {
-    window.chatUsed = true;
-  });
-  window.addEventListener("scroll", () => {
-    window.chatUsed = true;
-  });
+// const checkIfUsed = () => {
+//   window.addEventListener("click", () => {
+//     window.chatUsed = true;
+//   });
+//   window.addEventListener("keyup", () => {
+//     window.chatUsed = true;
+//   });
+//   window.addEventListener("scroll", () => {
+//     window.chatUsed = true;
+//   });
 
-  setInterval(() => {
-    if (window.chatUsed) {
-      window.chatUsed = false;
-    } else if (msgInputEl.value === "") {
-      location.reload();
-    }
-  }, 2 * 60 * 1000);
-}
+//   setInterval(() => {
+//     if (window.chatUsed) {
+//       window.chatUsed = false;
+//     } else if (msgInputEl.value === "") {
+//       location.reload();
+//     }
+//   }, 2 * 60 * 1000);
+// }
 
 const parseDate = timestamp => {
   const date = new Date(timestamp);
@@ -127,7 +127,7 @@ const pushMessage = (encrypted, id) => {
   avatar.classList.add("avatar");
   msgInner.classList.add("msg");
   avatar.onclick = () => {
-    delete messages[id];
+    messages.splice(id, 1);
   }
 
   avatar.innerHTML = `${identicon(fingerprint)}`
@@ -175,7 +175,6 @@ const pushMessage = (encrypted, id) => {
 //   loadChat(false);
 // }
 const sendUpdates = async data => {
-  console.log(data);
   try {
     const res = await (await fetch(window.chatAddr + (chatPatchSupported ? "?patch=true" : ""), {
       method: "PUT",
@@ -204,12 +203,29 @@ window.onresize = () => {
   msgsEl.scrollTop = msgsEl.scrollHeight;
 }
 
+window.observeMessages = () => {
+  window.messagesObserver = observe(window.messages, async patches => {
+    await sendUpdates(patches);
+  });
+}
+
+window.setLongpollMessages = msgs => {
+  messagesObserver.unobserve();
+  msgsEl.classList.add("loading");
+  window.messages = msgs;
+  msgsEl.innerHTML = ""; // TODO: use patches
+  messages.filter(m => m && m.data).forEach(pushMessage);
+  msgsEl.classList.remove("loading");
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  observeMessages();
+}
+
 const loadChat = async (firstTime) => {
   if (chatLongpollSupported && !firstTime) {
     try {
       const res = await fetch(window.chatAddr + "?longpoll=true");
       if (res.status === 200) {
-        window.messages = await res.json();
+        setLongpollMessages(await res.json());
       } else if (res.status !== 204) {
         throwErrorAndReload("Error loading messages with longpoll");
       }
@@ -236,9 +252,7 @@ const loadChat = async (firstTime) => {
       msgsEl.classList.remove("loading");
       msgsEl.scrollTop = msgsEl.scrollHeight;
       if (firstTime) {
-        window.messagesObserver = observe(window.messages, async patches => {
-          await sendUpdates(patches);
-        });
+        observeMessages();
       }
     }, 300);
     if (!chatLongpollSupported) {
@@ -266,7 +280,7 @@ passwordFormEl.addEventListener("submit", e => {
   chatNameEl.value = "";
 
   loadChat(true);
-  checkIfUsed();
+  // checkIfUsed();
 });
 
 msgFormEl.addEventListener("submit", async e => {
