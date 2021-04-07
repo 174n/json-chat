@@ -153,27 +153,6 @@ const pushMessage = (encrypted, id) => {
   msgsEl.append(message);
 }
 
-// const saveMessages = async () => {
-//   try {
-//     const encrypted = messages.filter(m => m).map(m => ({
-//       data: AES.encrypt(JSON.stringify(m), chatPass).toString()
-//     }));
-//     const res = await (await fetch(window.chatAddr, {
-//       method: "PUT",
-//       headers: {
-//         "Content-Type": "application/json"
-//       },
-//       body: JSON.stringify(encrypted)
-//     })).json();
-//     if (res.error) {
-//       throwErrorAndReload(res.error);
-//     }
-//   } catch (err) {
-//     throwErrorAndReload(err);
-//   }
-//   msgsEl.scrollTop = msgsEl.scrollHeight;
-//   loadChat(false);
-// }
 const sendUpdates = async data => {
   try {
     const res = await (await fetch(window.chatAddr + (chatPatchSupported ? "?patch=true" : ""), {
@@ -194,9 +173,15 @@ const sendUpdates = async data => {
 }
 
 window.createChat = async pass => { // Not accesible in gui
-  return await (await fetch(`${chatServerEl.value.split("/").slice(0, -1).join("/")}/${
+  return await (await fetch(`${chatServerEl.value.replace(/^(lp|l|p):(\s|)+/g, "").split("/").slice(0, -1).join("/")}/${
     EvpKDF(pass || chatPasswordEl.value, chatServerEl.value.split("/").slice(-1).join("/")).toString()
-  }`, { method: "PUT", body: "[]"}));
+  }`, {
+    method: "PUT",
+    headers: {
+      "content-type": "application/json"
+    },
+    body: "[]"
+  }));
 }
 
 window.onresize = () => {
