@@ -7,6 +7,8 @@ import { escape } from "html-sloppy-escaper";
 import { observe } from "fast-json-patch";
 import { identicon } from "minidenticons";
 
+window.AES = AES;
+
 document.body.setAttribute("style", "");
 
 const overlayEl = document.querySelector("#overlay");
@@ -70,7 +72,7 @@ window.browserFingerprint = getHash([
   ].join('###')).toString();
 
 // https://github.com/TinyLibraries/tiny-mark
-const urlRegex = '(https?:\\/\\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))';
+window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))';
 const tinymark = str => str
   .replace(/(_[^*_]+)\*([^*_]+_)/g, "$1_*_$2") // Remove interlacing
   .replace(/\*([^*]+)\*/g, "<b>$1</b>") // Bold
@@ -105,6 +107,7 @@ const pushMessage = (encrypted, id) => {
   msgInner.classList.add("msg");
   avatar.onclick = () => {
     messages.splice(id, 1);
+    notify();
   }
 
   avatar.innerHTML = `${identicon(fingerprint)}`
@@ -259,6 +262,14 @@ passwordFormEl.addEventListener("submit", e => {
   loadChat(true);
 });
 
+window.notify = () => {
+  window.messages.filter(m => m && m.webhook).forEach(async m => {
+    const url = AES.decrypt(m.webhook, window.chatPass).toString(Utf8);
+    if (url.match(new RegExp(urlRegex, "g")))
+      await fetch(url);
+  });
+}
+
 msgFormEl.addEventListener("submit", async e => {
   e.preventDefault();
   if (window.chatAddr) {
@@ -278,5 +289,6 @@ msgFormEl.addEventListener("submit", async e => {
     msgsEl.scrollTop = msgsEl.scrollHeight;
     scrollWhenImagesLoaded();
     msgInputEl.value = "";
+    notify();
   }
 });

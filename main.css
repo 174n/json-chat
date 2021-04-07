@@ -217,7 +217,7 @@ button:hover, .write button:focus {
   right: 15px;
 }
 .msg .text {
-  line-height: 1.5em;
+  line-height: 1.3em;
   letter-spacing: 0.01em;
 }
 .msg .text img {
