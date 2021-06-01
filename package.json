@@ -3,7 +3,8 @@
     "crypto-es": "^1.2.7",
     "fast-json-patch": "^3.0.0-1",
     "html-sloppy-escaper": "^0.1.0",
-    "minidenticons": "^0.1.8"
+    "minidenticons": "^0.1.8",
+    "tiny-enc": "^1.0.1"
   },
   "scripts": {
     "dev": "vite --port 8080",

@@ -19,8 +19,9 @@ a {
   color: #8da89e;
   text-decoration: none;
   position: relative;
+  word-wrap: break-word;
 }
-a:after {
+/* a:after {
   content: '';
   position: absolute;
   bottom: 0;
@@ -32,6 +33,9 @@ a:after {
 }
 a:hover:after {
   bottom: -4px;
+} */
+a:hover {
+  text-decoration: underline;
 }
 input {
   flex-grow: 1;

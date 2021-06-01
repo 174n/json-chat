@@ -1,13 +1,14 @@
 import "./main.css";
 
 import { AES } from "crypto-es/lib/aes";
+// import tinyEnc from "tiny-enc";
 import { EvpKDF } from "crypto-es/lib/evpkdf";
 import { Utf8 } from "crypto-es/lib/core";
 import { escape } from "html-sloppy-escaper";
 import { observe } from "fast-json-patch";
 import { identicon } from "minidenticons";
 
-window.AES = AES;
+// window.AES = { encrypt: (a, b) => tinyEnc.encrypt(b, a), decrypt: (a, b) => tinyEnc.decrypt(b, a) };
 
 document.body.setAttribute("style", "");
 
@@ -89,11 +90,18 @@ setInterval(updateTimestamps, 60000);
 
 window.navestiSuetu=()=>setInterval(()=>{document.querySelector(".icon-bg").innerHTML=Array.from({length:(window.innerHeight+window.innerWidth)/10}).map(()=>identicon(Math.random().toString())).join("\n")},500);
 
-const decryptMessage = msg =>
-  JSON.parse(AES.decrypt(msg.data, window.chatPass).toString(Utf8));
+const decryptMessage = async msg => {
+  const decr = (await AES.decrypt(msg.data, window.chatPass)).toString(Utf8);
+  try {
+    return JSON.parse(decr);
+  } catch (err) {
+    console.error(err);
+    return {};
+  }
+}
 
-const pushMessage = (encrypted, id) => {
-  const {name, date, msg, fingerprint} = decryptMessage(encrypted);
+const pushMessage = async (encrypted, id) => {
+  const {name, date, msg, fingerprint} = await decryptMessage(encrypted);
   if (!name || !date || !msg || !fingerprint) {
     throwErrorAndReload("Message parsing error");
     return;
@@ -106,7 +114,7 @@ const pushMessage = (encrypted, id) => {
   avatar.classList.add("avatar");
   msgInner.classList.add("msg");
   avatar.onclick = () => {
-    messages.splice(id, 1);
+    messages.splice(id+1, 1);
     notify();
   }
 
@@ -149,7 +157,7 @@ const sendUpdates = async data => {
     return throwErrorAndReload(err);
   }
   [...document.querySelectorAll(".not-sent")].forEach(el => el.classList.remove("not-sent"));
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+  scrollToLatest();
   scrollWhenImagesLoaded();
 }
 
@@ -166,7 +174,7 @@ window.createChat = async pass => { // Not accesible in gui
 }
 
 window.onresize = () => {
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+  scrollToLatest();
 }
 
 window.observeMessages = () => {
@@ -179,13 +187,21 @@ window.setLongpollMessages = msgs => {
   messagesObserver.unobserve();
   msgsEl.classList.add("loading");
   window.messages = msgs;
-  msgsEl.innerHTML = ""; // TODO: use patches
-  messages.filter(m => m && m.data).forEach(pushMessage);
-  msgsEl.classList.remove("loading");
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-  scrollWhenImagesLoaded();
+  if (!msgs || !(msgs.length > 0)) {
+    msgsEl.innerHTML = ""; // TODO: use patches
+    messages.filter(m => m && m.data).forEach(pushMessage);
+    msgsEl.classList.remove("loading");
+    scrollToLatest();
+    scrollWhenImagesLoaded();
+  }
   updateTimestamps();
   observeMessages();
+}
+
+const scrollToLatest = () => {
+  setTimeout(() => {
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }, 300);
 }
 
 const scrollWhenImagesLoaded = () => {  
@@ -194,7 +210,7 @@ const scrollWhenImagesLoaded = () => {
       .filter(img => !img.complete)
       .map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))
   ).then(() => {
-    msgsEl.scrollTop = msgsEl.scrollHeight;
+    scrollToLatest();
   });
 }
 
@@ -229,7 +245,7 @@ const loadChat = async (firstTime) => {
       messages.filter(m => m && m.data).forEach(pushMessage);
       msgsEl.classList.remove("loading");
       scrollWhenImagesLoaded()
-      msgsEl.scrollTop = msgsEl.scrollHeight;
+      scrollToLatest();
       if (firstTime) {
         observeMessages();
       }
@@ -264,7 +280,7 @@ passwordFormEl.addEventListener("submit", e => {
 
 window.notify = () => {
   window.messages.filter(m => m && m.webhook).forEach(async m => {
-    const url = AES.decrypt(m.webhook, window.chatPass).toString(Utf8);
+    const url = await AES.decrypt(m.webhook, window.chatPass).toString(Utf8);
     if (url.match(new RegExp(urlRegex, "g")))
       await fetch(url);
   });
@@ -274,7 +290,7 @@ msgFormEl.addEventListener("submit", async e => {
   e.preventDefault();
   if (window.chatAddr) {
     const encrypted = {
-      data: AES.encrypt(JSON.stringify({
+      data: await AES.encrypt(JSON.stringify({
         name: chatName,
         fingerprint: browserFingerprint,
         date: new Date().getTime(),
@@ -286,7 +302,7 @@ msgFormEl.addEventListener("submit", async e => {
       data: encrypted.data,
       notSent: true
     });
-    msgsEl.scrollTop = msgsEl.scrollHeight;
+    scrollToLatest();
     scrollWhenImagesLoaded();
     msgInputEl.value = "";
     notify();
