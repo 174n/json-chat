@@ -41,7 +41,8 @@ window.onbeforeunload = () => {
   window.timeDiff = 0;
   try {
     const date = Date.now();
-    const serverTime = new Date((await (await fetch("http://worldclockapi.com/api/json/utc/now")).json())?.currentDateTime).getTime();
+    const serverTime = (await (await fetch("https://use.ntpjs.org/v1/time.json")).json()).now * 1000;
+    // const serverTime = new Date((await (await fetch("http://worldclockapi.com/api/json/utc/now")).json())?.currentDateTime).getTime();
     window.timeDiff = parseInt((Date.now() + date - serverTime * 2) / 2);
   } catch(err) {}
 })();
