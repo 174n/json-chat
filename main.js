@@ -221,11 +221,14 @@ const setTypingMessage = async () => {
   if (!typing[0] || !typing[0].typing)
     return;
   const typingPpl = JSON.parse(await AES.decrypt(typing[0].typing, window.chatPass).toString(Utf8))
-    ?.filter(t => Date.now() - t.timestamp + timeDiff < 70000 && t.chatName !== chatName && t.browserFingerprint !== browserFingerprint)
+    ?.filter(t => Date.now() - t.timestamp + timeDiff < 20000 && t.chatName !== chatName && t.browserFingerprint !== browserFingerprint)
     ?.map(t => t.chatName)
     ?.filter((t, i, a) => a.indexOf(t) === i);
-  if (typingPpl && typingPpl.length > 0)
+  if (typingPpl && typingPpl.length > 0) {
     typingEl.innerText = `${typingPpl.join()} набира${typingPpl.length > 1 ? "ют" : "ет"} сообщение...`;
+  } else {
+    typingEl.innerText = "";
+  }
 }
 
 window.observeMessages = () => {
