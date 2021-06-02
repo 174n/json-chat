@@ -21,6 +21,7 @@ const msgInputEl = document.querySelector("#msg-input");
 const passwordFormEl = document.querySelector("#password-form");
 const msgFormEl = document.querySelector("#msg-form");
 const loadingBarEl = document.querySelector("#loading-bar");
+const typingEl = document.querySelector("#typing");
 
 window.throwErrorAndReload = msg => {
   if (!window.errorAccured) {
@@ -35,6 +36,15 @@ window.throwErrorAndReload = msg => {
 window.onbeforeunload = () => {
   window.leaving = true;
 };
+
+(async () => {
+  window.timeDiff = 0;
+  try {
+    const date = Date.now();
+    const serverTime = new Date((await (await fetch("http://worldclockapi.com/api/json/utc/now")).json())?.currentDateTime).getTime();
+    window.timeDiff = parseInt((Date.now() + date - serverTime * 2) / 2);
+  } catch(err) {}
+})();
 
 chatServerEl.value = chatServerEl.value.replace(
   "%servername%",
@@ -114,7 +124,8 @@ const pushMessage = async (encrypted, id) => {
   avatar.classList.add("avatar");
   msgInner.classList.add("msg");
   avatar.onclick = () => {
-    messages.splice(id+1, 1);
+    messages.splice(id, 1);
+    document.querySelector(`.message:nth-child(${id+1})`).remove();
     notify();
   }
 
@@ -134,7 +145,7 @@ const pushMessage = async (encrypted, id) => {
       <div class="fingerprint">[${fingerprint.slice(0, 10)}]</div>
     </div>
     <div class="text">${tinymark(escape(msg))}</div>
-    <div class="date" data-date="${date}"></div>
+    <div class="date" data-date="${date + timeDiff}"></div>
   `;
   message.append(avatar);
   message.append(msgInner);
@@ -177,6 +188,45 @@ window.onresize = () => {
   scrollToLatest();
 }
 
+const throttle = (fn, delay) => {
+  let lastCalled = 0;
+  return (...args) => {
+    let now = new Date().getTime();
+    if (now - lastCalled < delay) {
+      return;
+    }
+    lastCalled = now;
+    return fn(...args);
+  }
+}
+
+msgInputEl.addEventListener("input", throttle(async () => {
+  if (chatLongpollSupported && chatPatchSupported) {
+    const typing = messages.filter(m => m && m.typing);
+    if (typing && typing[0]) {
+      const decrTyping = JSON.parse(await AES.decrypt(typing[0].typing, window.chatPass).toString(Utf8));
+      const msg = [...(decrTyping?.filter(t => Date.now() - t.timestamp + timeDiff < 30000) || []), { chatName, timestamp: Date.now() - timeDiff, browserFingerprint}];
+      typing[0].typing = await AES.encrypt(JSON.stringify(msg), chatPass).toString();
+    } else {
+      messages.push({
+        typing: await AES.encrypt(JSON.stringify([{ chatName, timestamp: Date.now() - timeDiff, browserFingerprint }]), chatPass).toString()
+      });
+    }
+  }
+}, 5000));
+
+const setTypingMessage = async () => {
+  let typing = messages.filter(m => m && m.typing);
+  if (!typing[0] || !typing[0].typing)
+    return;
+  const typingPpl = JSON.parse(await AES.decrypt(typing[0].typing, window.chatPass).toString(Utf8))
+    ?.filter(t => Date.now() - t.timestamp + timeDiff < 70000 && t.chatName !== chatName && t.browserFingerprint !== browserFingerprint)
+    ?.map(t => t.chatName)
+    ?.filter((t, i, a) => a.indexOf(t) === i);
+  if (typingPpl && typingPpl.length > 0)
+    typingEl.innerText = `${typingPpl.join()} набира${typingPpl.length > 1 ? "ют" : "ет"} сообщение...`;
+}
+
 window.observeMessages = () => {
   window.messagesObserver = observe(window.messages, async patches => {
     await sendUpdates(patches);
@@ -187,13 +237,13 @@ window.setLongpollMessages = msgs => {
   messagesObserver.unobserve();
   msgsEl.classList.add("loading");
   window.messages = msgs;
-  if (!msgs || !(msgs.length > 0)) {
+  if (msgs || msgs.length > 0) {
     msgsEl.innerHTML = ""; // TODO: use patches
-    messages.filter(m => m && m.data).forEach(pushMessage);
-    msgsEl.classList.remove("loading");
+    msgs.filter(m => m && m.data).forEach(pushMessage);
     scrollToLatest();
     scrollWhenImagesLoaded();
   }
+  msgsEl.classList.remove("loading");
   updateTimestamps();
   observeMessages();
 }
@@ -215,6 +265,9 @@ const scrollWhenImagesLoaded = () => {
 }
 
 const loadChat = async (firstTime) => {
+  if (chatLongpollSupported && chatPatchSupported && !firstTime) {
+    setInterval(setTypingMessage, 5000);
+  }
   if (chatLongpollSupported && !firstTime) {
     try {
       const res = await fetch(window.chatAddr + "?longpoll=true");
@@ -293,7 +346,7 @@ msgFormEl.addEventListener("submit", async e => {
       data: await AES.encrypt(JSON.stringify({
         name: chatName,
         fingerprint: browserFingerprint,
-        date: new Date().getTime(),
+        date: Date.now() - timeDiff,
         msg: msgInputEl.value
       }), chatPass).toString()
     }
@@ -301,7 +354,7 @@ msgFormEl.addEventListener("submit", async e => {
     pushMessage({
       data: encrypted.data,
       notSent: true
-    });
+    }, messages.length - 1);
     scrollToLatest();
     scrollWhenImagesLoaded();
     msgInputEl.value = "";

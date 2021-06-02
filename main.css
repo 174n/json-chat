@@ -229,6 +229,13 @@ button:hover, .write button:focus {
   max-height: 300px;
   padding: 5px 0;
 }
+#typing {
+  position: absolute;
+  font-size: 0.8em;
+  margin-top: -20px;
+  color: #666;
+  margin-left: 5px;
+}
 .write {
   padding: 10px;
   display: flex;
