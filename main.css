@@ -180,6 +180,7 @@ button:hover, .write button:focus {
   max-width: calc(100% - 70px);
   position: relative;
   z-index: 99;
+  word-break: break-word;
 }
 .msgs .avatar:hover + .msg {
   filter: blur(2px) brightness(0.5);

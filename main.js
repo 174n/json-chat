@@ -84,13 +84,13 @@ window.browserFingerprint = getHash([
   ].join('###')).toString();
 
 // https://github.com/TinyLibraries/tiny-mark
-window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*))';
+window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.,;~#?&//=]*))';
 const tinymark = str => str
   .replace(/(_[^*_]+)\*([^*_]+_)/g, "$1_*_$2") // Remove interlacing
   .replace(/\*([^*]+)\*/g, "<b>$1</b>") // Bold
   .replace(/_([^_]+)_/g, "<em>$1</em>") // Italic
   .replace(new RegExp(`(?<!\\]\\()${urlRegex}`, "g"), '<a href="$1" target="_blank">$1</a>') // Link
-  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "g"), '<img src="$2" alt="$1">') // Image
+  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "g"), '<a href="$2" target="_blank"><img src="$2" alt="$1"></a>') // Image
   .replace(/\n/g, "<br />"); // New Line
 
 // tinyAgo
@@ -125,9 +125,9 @@ const pushMessage = async (encrypted, id) => {
   avatar.classList.add("avatar");
   msgInner.classList.add("msg");
   avatar.onclick = () => {
-    messages.splice(id, 1);
+    messages.splice(id-1, 1);
     document.querySelector(`.message:nth-child(${id+1})`).remove();
-    notify();
+    // notify();
   }
 
   avatar.innerHTML = `${identicon(fingerprint)}`
