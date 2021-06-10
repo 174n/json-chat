@@ -188,7 +188,14 @@ button:hover, .write button:focus {
 .msg.mine {
   background-color: #394440;
 }
-.msg.not-sent:after {
+.encfile {
+  width: 100%;
+  height: 5px;
+}
+.error {
+  color: #ff5b5b;
+}
+.msg.not-sent:after, .encfile:after {
   content: '';
   position: absolute;
   top: 0;

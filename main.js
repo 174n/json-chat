@@ -9,6 +9,7 @@ import { observe } from "fast-json-patch";
 import { identicon } from "minidenticons";
 
 // window.AES = { encrypt: (a, b) => tinyEnc.encrypt(b, a), decrypt: (a, b) => tinyEnc.decrypt(b, a) };
+window.year = new Date().getFullYear();
 
 document.body.setAttribute("style", "");
 
@@ -22,6 +23,7 @@ const passwordFormEl = document.querySelector("#password-form");
 const msgFormEl = document.querySelector("#msg-form");
 const loadingBarEl = document.querySelector("#loading-bar");
 const typingEl = document.querySelector("#typing");
+const uploadBtnEl = document.querySelector("#upload-btn");
 
 window.throwErrorAndReload = msg => {
   if (!window.errorAccured) {
@@ -50,9 +52,76 @@ window.onbeforeunload = () => {
 chatServerEl.value = chatServerEl.value.replace(
   "%servername%",
   location.protocol === "file:" || location.host.match(/^localhost:\d{2,4}$/g)
-    ? "http://localhost:3000"
+    ? "https://rundik.ru/json/"
+    // ? "http://localhost:3000"
     : `${location.origin}/json`
 );
+
+window.uploadFile = () => {
+  let metadata;
+  return new Promise((resolve, reject) => {
+    const fileSelector = document.createElement('input');
+    fileSelector.setAttribute('type', 'file');
+    fileSelector.click();
+  
+    const readFile = async e => {
+      try {
+        const enc = (await AES.encrypt(JSON.stringify({
+          url: e.target.result,
+          ...metadata
+        }), window.chatPass)).toString();
+
+        const hash = EvpKDF(e.target.result).toString();
+
+        const url = `${
+          chatServerEl.value.replace(/^(lp|l|p):(\s|)+/g, "").split("/").slice(0, -1).join("/")
+        }/${
+          EvpKDF(window.chatPass + hash).toString()
+        }`;
+
+        await (await fetch(url, {
+          method: "PUT",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            file: enc
+          })
+        }));
+
+        resolve(url);
+      } catch (err) {
+        reject(err);
+      }
+    }
+  
+    const changeFile = () => {
+      const file = fileSelector.files[0];
+      if (file.size > 100000) {
+        alert("Файл не больше 100кб");
+        return;
+      }
+      metadata = { name: file.name, modified: file.lastModified, size: file.size};
+      const reader = new FileReader();
+      reader.addEventListener('load', readFile);
+      reader.readAsDataURL(file);
+    }
+    fileSelector.addEventListener('change', changeFile);
+  });
+}
+
+uploadBtnEl.addEventListener("click", async () => {
+  let fileUrl;
+  try {
+    fileUrl = await uploadFile();
+  } catch (err) {
+    return;
+  }
+  if (fileUrl) {
+    msgInputEl.value = `$[](${fileUrl})`;
+    submitMessage();
+  }
+});
 
 const getHash = str => {
   let hash = 0, i, chr;
@@ -84,20 +153,49 @@ window.browserFingerprint = getHash([
   ].join('###')).toString();
 
 // https://github.com/TinyLibraries/tiny-mark
-window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\\b([-a-zA-Z0-9()@:%_\\+.,;~#?&//=]*))';
+window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zа-я0-9@:%._\\+~#=]{1,256}\\.[a-zа-я0-9()]{1,6}\\b([-a-zа-я0-9()@:%_\\+.,;~#?&//=]*))';
+window.encfilesCache = {};
 const tinymark = str => str
   .replace(/(_[^*_]+)\*([^*_]+_)/g, "$1_*_$2") // Remove interlacing
   .replace(/\*([^*]+)\*/g, "<b>$1</b>") // Bold
   .replace(/_([^_]+)_/g, "<em>$1</em>") // Italic
-  .replace(new RegExp(`(?<!\\]\\()${urlRegex}`, "g"), '<a href="$1" target="_blank">$1</a>') // Link
-  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "g"), '<a href="$2" target="_blank"><img src="$2" alt="$1"></a>') // Image
+  .replace(new RegExp(`(?<!\\]\\()${urlRegex}`, "gi"), '<a href="$1" target="_blank">$1</a>') // Link
+  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), '<a href="$2" target="_blank"><img src="$2" alt="$1"></a>') // Image
+  .replace(new RegExp(`\\$\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), (...args) =>
+    encfilesCache[args[2]]
+      ? `<img src="${encfilesCache[args[2]].url}">`
+      : `<span data-encfile="${args[2]}" class="encfile"></span>`
+  ) // Encrypted files
   .replace(/\n/g, "<br />"); // New Line
 
+const loadEncryptedFiles = () => {
+  [...document.querySelectorAll("[data-encfile]")].forEach(async el => {
+    const url = el.getAttribute("data-encfile");
+    let enc;
+    try {
+      enc = await (await fetch(url)).json();
+    } catch (err) {
+      el.outerHTML = `<b class="error">${err}</b>`;
+      return;
+    }
+    if (enc && enc.file) {
+      const json = encfilesCache[url] || JSON.parse(await AES.decrypt(enc.file, window.chatPass).toString(Utf8));
+      if (json.url.match(/^data:image/g)) {
+        el.outerHTML = `<img src="${json.url}">`;
+        encfilesCache[url] = json;
+      } else {
+        el.outerHTML = `<b class="error">тип файла пока не поддерживается</b>`;
+      }
+      scrollToLatest();
+    }
+  });
+}
+
 // tinyAgo
-const ago=e=>{let t,n,r=0|(Date.now()-e)/1e3,o={"сек":60,"мин":60,"ч":24};for(t in o)if(n=r%o[t],!(r=0|r/o[t]))return n+" "+t+". назад";return new Date(e).toLocaleString("ru")};
+const ago=e=>{let t,n,r=0|(Date.now()-e)/1e3,o={"сек":60,"мин":60,"ч":24};for(t in o)if(n=r%o[t],!(r=0|r/o[t]))return n+" "+t+". назад";return new Date(e).toLocaleString("ru").replace(new RegExp('\\.'+year), '').slice(0, -3)};
 const updateTimestamps = (start=0) => [...document.querySelectorAll("[data-date]")].slice(start).forEach(d => d.innerText = ago(parseInt(d.getAttribute("data-date"))));
 setInterval(() => updateTimestamps(-3), 1000);
-setInterval(updateTimestamps, 60000);
+setInterval(() => updateTimestamps(-15), 60000);
 
 window.navestiSuetu=()=>setInterval(()=>{document.querySelector(".icon-bg").innerHTML=Array.from({length:(window.innerHeight+window.innerWidth)/10}).map(()=>identicon(Math.random().toString())).join("\n")},500);
 
@@ -124,9 +222,10 @@ const pushMessage = async (encrypted, id) => {
   message.classList.add("message");
   avatar.classList.add("avatar");
   msgInner.classList.add("msg");
-  avatar.onclick = () => {
-    messages.splice(id-1, 1);
-    document.querySelector(`.message:nth-child(${id+1})`).remove();
+  avatar.onclick = async (e) => {
+    // console.log(e.target.parentElement.innerText, await AES.decrypt(messages[id].data, window.chatPass).toString(Utf8));
+    messages.splice(id + 2, 1);
+    // document.querySelector(`.message:nth-child(${id+1})`).remove();
     // notify();
   }
 
@@ -255,17 +354,17 @@ window.setLongpollMessages = msgs => {
 const scrollToLatest = () => {
   setTimeout(() => {
     msgsEl.scrollTop = msgsEl.scrollHeight;
+    updateTimestamps();
   }, 300);
 }
 
-const scrollWhenImagesLoaded = () => {  
-  Promise.all(
+const scrollWhenImagesLoaded = async () => {  
+  await Promise.all(
     Array.from(document.images)
       .filter(img => !img.complete)
       .map(img => new Promise(resolve => { img.onload = img.onerror = resolve; }))
-  ).then(() => {
-    scrollToLatest();
-  });
+  );
+  scrollToLatest();
 }
 
 const loadChat = async (firstTime) => {
@@ -306,7 +405,6 @@ const loadChat = async (firstTime) => {
       if (firstTime) {
         observeMessages();
       }
-      updateTimestamps();
     }, 300);
     if (!chatLongpollSupported) {
       setTimeout(loadChat, 15000)
@@ -316,6 +414,7 @@ const loadChat = async (firstTime) => {
     loadingBarEl.remove();
     loadChat();
   }
+  setTimeout(() => loadEncryptedFiles(), 1000);
 };
 
 passwordFormEl.addEventListener("submit", e => {
@@ -338,14 +437,23 @@ passwordFormEl.addEventListener("submit", e => {
 window.notify = () => {
   window.messages.filter(m => m && m.webhook).forEach(async m => {
     const url = await AES.decrypt(m.webhook, window.chatPass).toString(Utf8);
-    if (url.match(new RegExp(urlRegex, "g")))
+    if (url.match(new RegExp(urlRegex, "gi")))
       await fetch(url);
   });
 }
 
 msgFormEl.addEventListener("submit", async e => {
   e.preventDefault();
+  submitMessage();
+});
+
+const submitMessage = async () => {
   if (window.chatAddr) {
+    if (msgInputEl.value === "navestiSuetu") {
+      navestiSuetu();
+      msgInputEl.value = "";
+      return;
+    }
     const encrypted = {
       data: await AES.encrypt(JSON.stringify({
         name: chatName,
@@ -355,7 +463,7 @@ msgFormEl.addEventListener("submit", async e => {
       }), chatPass).toString()
     }
     messages.push(encrypted);
-    pushMessage({
+    await pushMessage({
       data: encrypted.data,
       notSent: true
     }, messages.length - 1);
@@ -364,4 +472,4 @@ msgFormEl.addEventListener("submit", async e => {
     msgInputEl.value = "";
     notify();
   }
-});
+}
