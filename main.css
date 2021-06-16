@@ -2,9 +2,12 @@
   box-sizing: border-box;
   transition: all 300ms ease-in-out;
 }
-html, body {
+
+html,
+body {
   height: 100%;
 }
+
 body {
   background-color: #111;
   color: #fff;
@@ -12,15 +15,22 @@ body {
   padding: 0;
   max-height: 100%;
 }
-body, input, button, textarea {
+
+body,
+input,
+button,
+textarea {
   font-family: "Montserrat", sans-serif;
 }
+
 a {
   color: #8da89e;
   text-decoration: none;
   position: relative;
   word-wrap: break-word;
 }
+
+
 /* a:after {
   content: '';
   position: absolute;
@@ -34,9 +44,11 @@ a {
 a:hover:after {
   bottom: -4px;
 } */
+
 a:hover {
   text-decoration: underline;
 }
+
 input {
   flex-grow: 1;
   padding: 10px 15px;
@@ -47,9 +59,11 @@ input {
   margin-bottom: 5px;
   color: #fff;
 }
+
 input:focus {
   background-color: #394440;
 }
+
 button {
   outline: none;
   border: 0;
@@ -60,9 +74,12 @@ button {
   margin-bottom: 5px;
   border-radius: 15px;
 }
-button:hover, .write button:focus {
+
+button:hover,
+.write button:focus {
   background-color: #394440;
 }
+
 .container {
   width: 100%;
   max-width: 720px;
@@ -72,6 +89,7 @@ button:hover, .write button:focus {
   height: 100%;
   max-height: 100%;
 }
+
 .reload-status {
   position: fixed;
   bottom: 0;
@@ -82,6 +100,7 @@ button:hover, .write button:focus {
   height: 5px;
   background-color: #333;
 }
+
 .reload-status .bar {
   background-color: #394440;
   height: 100%;
@@ -90,18 +109,22 @@ button:hover, .write button:focus {
   transition-property: width;
   transition-timing-function: linear;
 }
+
 .reload-status .bar.toggle {
   display: none;
 }
+
 .reload-status .bar.full {
   width: 100%;
 }
+
 .chat {
   height: 100%;
   display: flex;
   justify-content: space-between;
   flex-direction: column;
 }
+
 .msgs {
   flex-direction: column;
   padding: 10px;
@@ -110,25 +133,31 @@ button:hover, .write button:focus {
   overflow-y: auto;
   scrollbar-width: thin;
 }
+
 .msgs::-webkit-scrollbar {
   width: 12px;
 }
+
 .msgs::-webkit-scrollbar-track {
   background: #333;
 }
+
 .msgs::-webkit-scrollbar-thumb {
   background-color: #394440;
   border-radius: 20px;
   border: 3px solid #333;
 }
+
 .msgs.loading {
   filter: blur(5px);
 }
+
 .msgs .message {
   display: flex;
   align-items: center;
   max-width: 80%;
 }
+
 .msgs .avatar {
   height: 45px;
   width: 45px;
@@ -140,6 +169,7 @@ button:hover, .write button:focus {
   justify-content: center;
   position: relative;
 }
+
 .msgs .avatar:after {
   content: '';
   position: absolute;
@@ -149,24 +179,28 @@ button:hover, .write button:focus {
   height: 100%;
   opacity: 0;
   transition: all 300ms ease-in-out;
-  background-color: rgba(0,0,0,.8);
+  background-color: rgba(0, 0, 0, .8);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 47.971 47.971' fill='%23fff'%3E%3Cdefs/%3E%3Cpath d='M28.228 23.986L47.092 5.122a2.998 2.998 0 000-4.242 2.998 2.998 0 00-4.242 0L23.986 19.744 5.121.88a2.998 2.998 0 00-4.242 0 2.998 2.998 0 000 4.242l18.865 18.864L.879 42.85a2.998 2.998 0 104.242 4.241l18.865-18.864L42.85 47.091c.586.586 1.354.879 2.121.879s1.535-.293 2.121-.879a2.998 2.998 0 000-4.242L28.228 23.986z'/%3E%3C/svg%3E");
   background-size: 40%;
   background-position: center;
   background-repeat: no-repeat;
   cursor: pointer;
 }
+
 .msgs .avatar:hover:after {
   opacity: 1;
   backdrop-filter: blur(2px);
 }
+
 .msgs .avatar img {
   height: 90%;
   width: 90%;
 }
+
 .msgs .message.same-name {
   align-self: flex-end;
 }
+
 .msg {
   background-color: #333;
   padding: 10px 15px;
@@ -182,20 +216,26 @@ button:hover, .write button:focus {
   z-index: 99;
   word-break: break-word;
 }
-.msgs .avatar:hover + .msg {
+
+.msgs .avatar:hover+.msg {
   filter: blur(2px) brightness(0.5);
 }
+
 .msg.mine {
   background-color: #394440;
 }
+
 .encfile {
   width: 100%;
   height: 5px;
 }
+
 .error {
   color: #ff5b5b;
 }
-.msg.not-sent:after, .encfile:after {
+
+.msg.not-sent:after,
+.encfile:after {
   content: '';
   position: absolute;
   top: 0;
@@ -206,6 +246,7 @@ button:hover, .write button:focus {
   background-size: cover;
   opacity: 0.1;
 }
+
 .msg .title-line {
   display: flex;
   justify-content: space-between;
@@ -213,30 +254,35 @@ button:hover, .write button:focus {
   margin-bottom: 5px;
   color: #ccc;
 }
+
 .msg .date,
-.msg .fingerprint
-{
+.msg .fingerprint {
   font-size: 0.7em;
 }
+
 .msg .fingerprint {
   letter-spacing: 0.1em;
   opacity: 0.5;
 }
+
 .msg .date {
   position: absolute;
   bottom: 5px;
   color: #aaa;
   right: 15px;
 }
+
 .msg .text {
   line-height: 1.3em;
   letter-spacing: 0.01em;
 }
+
 .msg .text img {
   max-width: 100%;
   max-height: 300px;
   padding: 5px 0;
 }
+
 #typing {
   position: absolute;
   font-size: 0.8em;
@@ -244,10 +290,12 @@ button:hover, .write button:focus {
   color: #666;
   margin-left: 5px;
 }
+
 .write {
   padding: 10px;
   display: flex;
 }
+
 .write button {
   margin-left: 10px;
   border-radius: 100%;
@@ -258,10 +306,12 @@ button:hover, .write button:focus {
   justify-content: center;
   padding: 0;
 }
+
 .write button svg {
   width: 30px;
   height: 30px;
 }
+
 .overlay {
   position: fixed;
   z-index: 9999;
@@ -275,7 +325,9 @@ button:hover, .write button:focus {
   align-items: center;
   justify-content: center;
 }
-.overlay:before, body:before {
+
+.overlay:before,
+body:before {
   pointer-events: none;
   content: '';
   position: absolute;
@@ -288,25 +340,31 @@ button:hover, .write button:focus {
   opacity: 0.1;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cdefs/%3E%3Cfilter id='a' x='0' y='0'%3E%3CfeTurbulence baseFrequency='.8' stitchTiles='stitch' type='fractalNoise'/%3E%3C/filter%3E%3Crect width='300' height='300' fill='%23000'/%3E%3Crect width='300' height='300' filter='url(%23a)' /%3E%3C/svg%3E");
 }
+
 .overlay.hidden {
   opacity: 0;
   visibility: hidden;
   z-index: -1;
 }
+
 .password {
   display: flex;
   flex-direction: column;
 }
+
 .password button {
   min-width: 250px;
   max-width: 100%;
 }
+
 .fullwidth {
   width: 100%;
 }
+
 a.image {
   cursor: pointer;
 }
+
 #image-popup {
   top: 0;
   left: 0;
@@ -318,10 +376,70 @@ a.image {
   background-repeat: no-repeat;
   background-position: center;
 }
+
+#image-popup.notransition {
+  transition: none;
+}
+
 #image-popup.hidden {
   visibility: hidden;
   pointer-events: none;
   opacity: 0;
-  /* transition: none; */
 }
-.icon-bg{position:absolute;width:100%;height:100%;top:0;left:0;z-index:-1;overflow:hidden;display:flex;justify-content:space-around;flex-wrap:wrap;opacity:0.05}.icon-bg svg{width:100px;height:100px;transform:rotate(10deg);animation:rotation 500ms}@keyframes rotation{from{transform:rotate(0deg)}to{transform:rotate(359deg)}}
+
+.file {
+  display: flex;
+  padding: 5px 10px;
+  text-decoration: none !important;
+  background-color: #333;
+  color: #aaa;
+  border-radius: 10px;
+}
+
+.file:hover {
+  background-color: #3a3a3a;
+}
+
+.file svg {
+  width: 30px;
+  margin-right: 10px;
+}
+
+.file-name {
+  overflow: hidden;
+}
+.file-size {
+  overflow: hidden;
+  font-size: .7em;
+  color: #777;
+}
+
+.icon-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  overflow: hidden;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  opacity: 0.05
+}
+
+.icon-bg svg {
+  width: 100px;
+  height: 100px;
+  transform: rotate(10deg);
+  animation: rotation 500ms
+}
+
+@keyframes rotation {
+  from {
+    transform: rotate(0deg)
+  }
+  to {
+    transform: rotate(359deg)
+  }
+}

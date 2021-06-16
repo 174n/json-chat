@@ -53,7 +53,8 @@ window.onbeforeunload = () => {
 chatServerEl.value = chatServerEl.value.replace(
   "%servername%",
   location.protocol === "file:" || location.host.match(/^localhost:\d{2,4}$/g)
-    ? "http://localhost:3000"
+    ? "https://rundik.ru/json"
+    // ? "http://localhost:3000"
     : `${location.origin}/json`
 );
 
@@ -171,14 +172,16 @@ window.imagePopup = el => {
     return;
   }
   imagePopupEl.classList.add("hidden");
+  imagePopupEl.classList.add("notransition");
   window.popupOrigin = [rect.top, rect.left, rect.width, rect.height];
   setPopupProps(...popupOrigin);
   imagePopupEl.style.backgroundImage = `url(${img.src})`;
 
   setTimeout(() => {
-    setPopupProps(0, 0, window.innerWidth, window.innerHeight);
+    imagePopupEl.classList.remove("notransition");
     imagePopupEl.classList.remove("hidden");
-  }, 300);
+    setPopupProps(0, 0, window.innerWidth, window.innerHeight);
+  }, 10);
 }
 
 window.closePopup = () => {
@@ -202,8 +205,8 @@ window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zа-я0-9@:%._\\+~#=]{1,256}\\.[a-z
 window.encfilesCache = {};
 const tinymark = str => str
   .replace(/(_[^*_]+)\*([^*_]+_)/g, "$1_*_$2") // Remove interlacing
-  .replace(/\*([^*]+)\*/g, "<b>$1</b>") // Bold
-  .replace(/_([^_]+)_/g, "<em>$1</em>") // Italic
+  .replace(/(?<=^|\s|\.|,)\*([^*]+)\*/g, "<b>$1</b>") // Bold
+  .replace(/(?<=^|\s|\.|,)_([^_]+)_/g, "<em>$1</em>") // Italic
   .replace(new RegExp(`(?<!\\]\\()${urlRegex}`, "gi"), '<a href="$1" target="_blank">$1</a>') // Link
   .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), imageTemplate("$2", "$1")) // Image
   .replace(new RegExp(`\\$\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), (...args) =>
@@ -229,8 +232,16 @@ const loadEncryptedFiles = () => {
         el.outerHTML = imageTemplate(json.url);
         encfilesCache[url] = json;
       } else {
-        el.outerHTML = `<b class="error">тип файла пока не поддерживается</b>`;
+        console.log(json);
+        el.outerHTML = `<a download="${
+          json.name
+        }" href="${json.url}" class="file">${
+          uploadBtnEl.innerHTML.replace(/2h-2v2a1 1 0 11-(.*)z/g, "")
+        }<div class="file-info"><div class="file-name">${
+          json.name
+        }</div><div class="file-size">${json.size}B</div></div></a>`;
       }
+      el.classList.remove("loading");
       scrollToLatest();
     }
   });
