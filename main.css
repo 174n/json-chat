@@ -304,4 +304,24 @@ button:hover, .write button:focus {
 .fullwidth {
   width: 100%;
 }
+a.image {
+  cursor: pointer;
+}
+#image-popup {
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+#image-popup.hidden {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+  /* transition: none; */
+}
 .icon-bg{position:absolute;width:100%;height:100%;top:0;left:0;z-index:-1;overflow:hidden;display:flex;justify-content:space-around;flex-wrap:wrap;opacity:0.05}.icon-bg svg{width:100px;height:100px;transform:rotate(10deg);animation:rotation 500ms}@keyframes rotation{from{transform:rotate(0deg)}to{transform:rotate(359deg)}}

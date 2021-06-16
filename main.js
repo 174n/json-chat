@@ -24,6 +24,7 @@ const msgFormEl = document.querySelector("#msg-form");
 const loadingBarEl = document.querySelector("#loading-bar");
 const typingEl = document.querySelector("#typing");
 const uploadBtnEl = document.querySelector("#upload-btn");
+const imagePopupEl = document.querySelector("#image-popup");
 
 window.throwErrorAndReload = msg => {
   if (!window.errorAccured) {
@@ -52,8 +53,7 @@ window.onbeforeunload = () => {
 chatServerEl.value = chatServerEl.value.replace(
   "%servername%",
   location.protocol === "file:" || location.host.match(/^localhost:\d{2,4}$/g)
-    ? "https://rundik.ru/json/"
-    // ? "http://localhost:3000"
+    ? "http://localhost:3000"
     : `${location.origin}/json`
 );
 
@@ -152,6 +152,50 @@ window.browserFingerprint = getHash([
     }).join(';')
   ].join('###')).toString();
 
+const imageTemplate = (url, alt="") =>
+  `<a onclick="imagePopup(this)" class="image"><img src="${url}" alt="${alt}"></a>`;
+
+const setPopupProps = (top, left, width, height) => {
+  imagePopupEl.style.top = top + "px";
+  imagePopupEl.style.left = left + "px";
+  imagePopupEl.style.width = width + "px";
+  imagePopupEl.style.height = height + "px";
+}
+
+window.imagePopup = el => {
+  const img = el?.children ? el.children[0] : null;
+  const rect = img?.getBoundingClientRect();
+  if (!rect) {
+    if (img)
+      window.open(img.src, '_blank');
+    return;
+  }
+  imagePopupEl.classList.add("hidden");
+  setPopupProps(rect.top, rect.left, rect.width, rect.height);
+  imagePopupEl.style.backgroundImage = `url(${img.src})`;
+
+  setTimeout(() => {
+    setPopupProps(0, 0, window.innerWidth, window.innerHeight);
+    imagePopupEl.classList.remove("hidden");
+  }, 300);
+}
+
+imagePopupEl.addEventListener("click", () => {
+  imagePopupEl.classList.add("hidden");
+  setTimeout(() => {
+    imagePopupEl.setAttribute("style", "");
+  }, 300);
+});
+window.addEventListener("keyup", e => {
+  if (e.key === "Escape") {
+    imagePopupEl.classList.add("hidden");
+    setTimeout(() => {
+      imagePopupEl.setAttribute("style", "");
+    }, 300);
+  }
+});
+
+
 // https://github.com/TinyLibraries/tiny-mark
 window.urlRegex = '(https?:\\/\\/(www\.)?[-a-zа-я0-9@:%._\\+~#=]{1,256}\\.[a-zа-я0-9()]{1,6}\\b([-a-zа-я0-9()@:%_\\+.,;~#?&//=]*))';
 window.encfilesCache = {};
@@ -160,10 +204,10 @@ const tinymark = str => str
   .replace(/\*([^*]+)\*/g, "<b>$1</b>") // Bold
   .replace(/_([^_]+)_/g, "<em>$1</em>") // Italic
   .replace(new RegExp(`(?<!\\]\\()${urlRegex}`, "gi"), '<a href="$1" target="_blank">$1</a>') // Link
-  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), '<a href="$2" target="_blank"><img src="$2" alt="$1"></a>') // Image
+  .replace(new RegExp(`!\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), imageTemplate("$2", "$1")) // Image
   .replace(new RegExp(`\\$\\[([^\\]]{0,255})\\]\\(${urlRegex}\\)`, "gi"), (...args) =>
     encfilesCache[args[2]]
-      ? `<img src="${encfilesCache[args[2]].url}">`
+      ? imageTemplate(encfilesCache[args[2]].url, encfilesCache[args[1]])
       : `<span data-encfile="${args[2]}" class="encfile"></span>`
   ) // Encrypted files
   .replace(/\n/g, "<br />"); // New Line
@@ -181,7 +225,7 @@ const loadEncryptedFiles = () => {
     if (enc && enc.file) {
       const json = encfilesCache[url] || JSON.parse(await AES.decrypt(enc.file, window.chatPass).toString(Utf8));
       if (json.url.match(/^data:image/g)) {
-        el.outerHTML = `<img src="${json.url}">`;
+        el.outerHTML = imageTemplate(json.url);
         encfilesCache[url] = json;
       } else {
         el.outerHTML = `<b class="error">тип файла пока не поддерживается</b>`;
