@@ -171,7 +171,8 @@ window.imagePopup = el => {
     return;
   }
   imagePopupEl.classList.add("hidden");
-  setPopupProps(rect.top, rect.left, rect.width, rect.height);
+  window.popupOrigin = [rect.top, rect.left, rect.width, rect.height];
+  setPopupProps(...popupOrigin);
   imagePopupEl.style.backgroundImage = `url(${img.src})`;
 
   setTimeout(() => {
@@ -180,18 +181,18 @@ window.imagePopup = el => {
   }, 300);
 }
 
-imagePopupEl.addEventListener("click", () => {
-  imagePopupEl.classList.add("hidden");
+window.closePopup = () => {
+  setPopupProps(...popupOrigin);
   setTimeout(() => {
+    imagePopupEl.classList.add("hidden");
     imagePopupEl.setAttribute("style", "");
   }, 300);
-});
+}
+
+imagePopupEl.addEventListener("click", closePopup);
 window.addEventListener("keyup", e => {
   if (e.key === "Escape") {
-    imagePopupEl.classList.add("hidden");
-    setTimeout(() => {
-      imagePopupEl.setAttribute("style", "");
-    }, 300);
+    closePopup();
   }
 });
 
